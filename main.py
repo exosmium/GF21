@@ -1,7 +1,6 @@
 import logging
 import asyncio
 import aiohttp
-import io
 from telethon import TelegramClient, events, types, Button
 from telethon.tl import functions, types as tl_types
 from datetime import datetime
@@ -12,7 +11,6 @@ from maps_service import MapsService
 from vehicle_status import VehicleStatus
 import lang
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -156,28 +154,25 @@ class GPSBot:
             travel_time = await self.maps_service.get_travel_time(status.lat, status.lng)
             message = self.format_status_message(status, travel_time)
             
-            map_image = await self.maps_service.generate_map_image(status.lat, status.lng)
-            
             await processing_msg.delete()
             
-            if map_image:
-                file = io.BytesIO(map_image)
-                file.name = 'location_map.png'
-                
-                await self.client.send_file(
-                    event.chat_id,
-                    file=file,
-                    caption=message,
-                    parse_mode='md',
-                    buttons=self.get_keyboard(),
-                    force_document=False
+            # Send location message first
+            await self.client.send_message(
+                event.chat_id,
+                file=types.InputMediaGeoPoint(
+                    types.InputGeoPoint(
+                        lat=status.lat,
+                        long=status.lng
+                    )
                 )
-            else:
-                await event.respond(
-                    message,
-                    parse_mode='md',
-                    buttons=self.get_keyboard()
-                )
+            )
+            
+            # Send status message with keyboard
+            await event.respond(
+                message,
+                parse_mode='md',
+                buttons=self.get_keyboard()
+            )
 
         except Exception as e:
             logger.error(f"Error in get_current_status: {str(e)}")
@@ -185,6 +180,7 @@ class GPSBot:
                 lang.STATUS_ERROR,
                 buttons=self.get_keyboard()
             )
+
 
 async def main():
     """Entry point of the application"""

@@ -77,33 +77,3 @@ class MapsService:
         except Exception as e:
             logger.error(f"Error getting travel time: {str(e)}")
             return lang.STATUS_UNKNOWN
-
-    async def generate_map_image(self, lat: float, lng: float) -> Optional[bytes]:
-        """Generate a static map image showing the route"""
-        try:
-            timestamp = int(time.time() * 1000)
-            path_param = f"path=color:0x0000ff|weight:5|{lat},{lng}|{self.config.HOME_COORDS}"
-            url = (
-                f"https://maps.googleapis.com/maps/api/staticmap?size=600x400"
-                f"&{path_param}"
-                f"&markers=color:red%7Clabel:D%7C{lat},{lng}"
-                f"&markers=color:blue%7Clabel:H%7C{self.config.HOME_COORDS}"
-                f"&key={self.config.GOOGLE_MAPS_API_KEY}"
-                f"&_={timestamp}"
-            )
-            headers = {
-                "Accept": "image/jpeg, image/png, image/*",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            }
-            async with self.session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    content_type = response.headers.get('Content-Type', '')
-                    if 'image' in content_type:
-                        return await response.read()
-                    else:
-                        logger.error(f"Unexpected content type: {content_type}")
-                        return None
-            return None
-        except Exception as e:
-            logger.error(f"Error generating map image: {str(e)}")
-            return None
