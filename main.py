@@ -3,11 +3,9 @@ import asyncio
 import aiohttp
 from telethon import TelegramClient, events, types, Button
 from telethon.tl import functions, types as tl_types
-from datetime import datetime
 from config import Config
 from session_manager import SessionManager
 from gps_service import GPSService
-from maps_service import MapsService
 from vehicle_status import VehicleStatus
 import lang
 
@@ -30,7 +28,6 @@ class GPSBot:
         self.session = None
         self.session_manager = None
         self.gps_service = None
-        self.maps_service = None
 
     async def start(self):
         """Initialize and run the bot"""
@@ -38,7 +35,6 @@ class GPSBot:
             self.session = aiohttp.ClientSession()
             self.session_manager = SessionManager(self.config, self.session)
             self.gps_service = GPSService(self.config, self.session_manager, self.session)
-            self.maps_service = MapsService(self.config, self.session)
             
             await self.session_manager.get_session()
             await self.setup_handlers()
@@ -88,12 +84,13 @@ class GPSBot:
             elif event.data == b"update_location":
                 await self.request_location_update(event)
 
-    def format_status_message(self, status: VehicleStatus, travel_time: str) -> str:
+    def format_status_message(self, status: VehicleStatus) -> str:
         """Format the status message for Telegram"""
         return lang.STATUS_TEMPLATE.format(
             name=status.name,
             update_time=status.update_time.strftime('%d.%m.%Y %H:%M'),
-            travel_time=travel_time,
+            lat=status.lat,
+            lng=status.lng,
             speed=status.speed,
             battery=status.battery
         )
@@ -151,8 +148,7 @@ class GPSBot:
                 return
 
             status = VehicleStatus(data)
-            travel_time = await self.maps_service.get_travel_time(status.lat, status.lng)
-            message = self.format_status_message(status, travel_time)
+            message = self.format_status_message(status)
             
             await processing_msg.delete()
             
@@ -180,7 +176,6 @@ class GPSBot:
                 lang.STATUS_ERROR,
                 buttons=self.get_keyboard()
             )
-
 
 async def main():
     """Entry point of the application"""

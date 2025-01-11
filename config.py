@@ -22,10 +22,6 @@ class Config:
     IMEI: str = _config['GPS']['IMEI']
     PASSWORD: str = _config['GPS']['PASSWORD']
     
-    # Maps settings
-    GOOGLE_MAPS_API_KEY: str = _config['Maps']['GOOGLE_MAPS_API_KEY']
-    HOME_COORDS: str = _config['Maps']['HOME_COORDS']
-    
     # App settings
     TIMEZONE = pytz.timezone(_config['App']['TIMEZONE'])
     UPDATE_RETRY_COUNT: int = int(_config['App']['UPDATE_RETRY_COUNT'])
